@@ -76,7 +76,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)SEMINARS_GREKOV\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\include;C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\src</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -91,7 +92,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)SEMINARS_GREKOV\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\include;C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\src</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -104,7 +106,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)SEMINARS_GREKOV\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\include;C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\src</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -119,7 +122,8 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(SolutionDir);$(SolutionDir)SEMINARS_GREKOV\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir);C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\include;C:\Users\demen\Desktop\СиАОД\Dementyanov_seminar\src</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -130,7 +134,7 @@
     <ClCompile Include="test_all_sorts.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\SEMINARS_GREKOV\SEMINARS_GREKOV.vcxproj">
+    <ProjectReference Include="..\Dementyanov_seminar\Dementyanov_seminar.vcxproj">
       <Project>{88f5fdb6-9e99-44bd-90d9-10021c9e3200}</Project>
     </ProjectReference>
   </ItemGroup>

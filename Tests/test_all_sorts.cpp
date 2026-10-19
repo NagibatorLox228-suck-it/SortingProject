@@ -7,7 +7,11 @@
 #include <random>
 #include <string>
 #include <vector>
-
+#include <climits>
+#include <filesystem>
+#include <functional>
+#include <iomanip>
+#include <limits>
 #include "insertion_sort.h"
 #include "selection_sort.h"
 #include "exchange_sort.h"
@@ -166,75 +170,76 @@ TEST_CASE("Internal: sort works on part of a larger buffer", "[internal][edge]")
 }
 
 // ============================================================
-//  Внешние сортировки (3 штуки)
+//  Внешние сортировки (3 штуки), текстовые файлы
 // ============================================================
+
+namespace fs = std::filesystem;
 
 template <typename T>
 struct ExternalSort
 {
     const char* name;
-    void (*fn)(const std::string&);
+    std::function<void(const std::string&, const std::string&, std::size_t)> fn;
 };
 
 template <typename T>
 std::vector<ExternalSort<T>> externalSorts()
 {
     return {
-        { "two_phase", twoPhaseMergeSort<T> },
-        { "one_phase", onePhaseMergeSort<T> },
-        { "natural",   naturalMergeSort<T> }
+        { "two_phase", [](const std::string& f, const std::string& t, std::size_t r)
+                       { twoPhaseMergeSort<T>(f, t, r); } },
+        { "one_phase", [](const std::string& f, const std::string& t, std::size_t r)
+                       { onePhaseMergeSort<T>(f, t, r); } },
+        { "natural",   [](const std::string& f, const std::string& t, std::size_t)
+                       { naturalMergeSort<T>(f, t); } }
     };
 }
 
 template <typename T>
-void writeBin(const std::string& name, const std::vector<T>& data)
+void writeTxt(const std::string& name, const std::vector<T>& data)
 {
-    std::ofstream out(name, std::ios::binary | std::ios::trunc);
-    if (!data.empty())
-        out.write(reinterpret_cast<const char*>(data.data()),
-            static_cast<std::streamsize>(data.size() * sizeof(T)));
+    std::ofstream out(name, std::ios::trunc);
+    out << std::setprecision(std::numeric_limits<T>::max_digits10);
+    for (const T& x : data) out << x << '\n';
 }
 
 template <typename T>
-std::vector<T> readBin(const std::string& name)
+std::vector<T> readTxt(const std::string& name)
 {
     std::vector<T> res;
-    std::ifstream in(name, std::ios::binary);
+    std::ifstream in(name);
     T x;
-    while (in.read(reinterpret_cast<char*>(&x), sizeof(T)))
-        res.push_back(x);
+    while (in >> x) res.push_back(x);
     return res;
 }
 
-bool fileExists(const std::string& name)
-{
-    std::ifstream f(name, std::ios::binary);
-    return f.good();
-}
-
-// Сортирует файл тремя внешними сортировками, сравнивает с std::sort
-// и проверяет, что временные файлы удалены.
+// Сортирует файл тремя внешними сортировками при разных runSize,
+// сравнивает с std::sort и проверяет, что временные файлы удалены.
 template <typename T>
 void checkAllExternal(const std::vector<T>& input)
 {
     std::vector<T> expected = input;
     std::sort(expected.begin(), expected.end());
+    fs::create_directories("test_data");
 
     for (const auto& s : externalSorts<T>())
     {
-        INFO("Sort: " << s.name);
-        const std::string file = std::string("test_ext_") + s.name + ".bin";
+        for (std::size_t runSize : { std::size_t(1), std::size_t(3),
+            std::size_t(64), std::size_t(100000) })
+        {
+            INFO("Sort: " << s.name << ", runSize: " << runSize);
+            const std::string file = std::string("test_data/") + s.name + ".txt";
+            const std::string tmp = std::string("test_tmp/") + s.name;
 
-        writeBin<T>(file, input);
-        REQUIRE_NOTHROW(s.fn(file));
+            writeTxt<T>(file, input);
+            REQUIRE_NOTHROW(s.fn(file, tmp, runSize));
+            REQUIRE(readTxt<T>(file) == expected);
 
-        REQUIRE(readBin<T>(file) == expected);
+            // временные файлы должны быть удалены
+            if (fs::exists(tmp)) REQUIRE(fs::is_empty(tmp));
 
-        // временные файлы должны быть удалены
-        for (const char* ext : { ".tmpB", ".tmpC", ".tmp1", ".tmp2", ".tmp3", ".tmp4" })
-            REQUIRE_FALSE(fileExists(file + ext));
-
-        std::remove(file.c_str());
+            fs::remove(file);
+        }
     }
 }
 
@@ -276,8 +281,13 @@ TEST_CASE("External: duplicates and negatives", "[external]")
 
 TEST_CASE("External: size is not a power of two", "[external]")
 {
-    checkAllExternal<int>({ 9, 3, 7, 1, 8, 2, 6 });             // 7
-    checkAllExternal<int>({ 4, 1, 3, 9, 7, 5, 2, 8, 6, 0, 11 }); // 11
+    checkAllExternal<int>({ 9, 3, 7, 1, 8, 2, 6 });
+    checkAllExternal<int>({ 4, 1, 3, 9, 7, 5, 2, 8, 6, 0, 11 });
+}
+
+TEST_CASE("External: the variant array", "[external]")
+{
+    checkAllExternal<int>({ 3, 19, 10, 1, 15, 4, 11, 20 });
 }
 
 TEST_CASE("External: random files of different sizes", "[external][random]")
@@ -300,10 +310,45 @@ TEST_CASE("External: random files of different sizes", "[external][random]")
     }
 }
 
+TEST_CASE("External: keepTemp leaves temporary files", "[external]")
+{
+    fs::create_directories("test_data");
+    const std::string file = "test_data/keep.txt";
+    writeTxt<int>(file, { 5, 3, 1, 4, 2 });
+
+    twoPhaseMergeSort<int>(file, "test_tmp/keep", 2, true);
+
+    REQUIRE(fs::exists("test_tmp/keep/two_phase_b.txt"));
+    REQUIRE(readTxt<int>(file) == std::vector<int>{ 1, 2, 3, 4, 5 });
+
+    fs::remove_all("test_tmp/keep");
+    fs::remove(file);
+}
+
 TEST_CASE("External: nonexistent file throws", "[external][edge]")
 {
-    const std::string missing = "this_file_does_not_exist.bin";
-    REQUIRE_THROWS(twoPhaseMergeSort<int>(missing));
-    REQUIRE_THROWS(onePhaseMergeSort<int>(missing));
-    REQUIRE_THROWS(naturalMergeSort<int>(missing));
+    const std::string missing = "this_file_does_not_exist.txt";
+    REQUIRE_THROWS(twoPhaseMergeSort<int>(missing, "test_tmp/x", 4));
+    REQUIRE_THROWS(onePhaseMergeSort<int>(missing, "test_tmp/x", 4));
+    REQUIRE_THROWS(naturalMergeSort<int>(missing, "test_tmp/x"));
+}
+
+TEST_CASE("Random: new data on every run", "[random][external][internal]")
+{
+    std::random_device rd;
+    const unsigned seed = rd();
+    INFO("Seed: " << seed);          
+
+    std::mt19937 gen(seed);
+    std::uniform_int_distribution<int> distSize(0, 3000);
+    std::uniform_int_distribution<int> distInt(-100000, 100000);
+
+    for (int round = 0; round < 5; ++round)
+    {
+        std::vector<int> v(distSize(gen));
+        for (auto& x : v) x = distInt(gen);
+
+        checkAllInternal<int>(v);
+        checkAllExternal<int>(v);
+    }
 }
